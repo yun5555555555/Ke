@@ -287,7 +287,7 @@ end
 
 WindUI:Popup({
     Title = "欢迎使用",
-    Content = "恐鬼症辅助脚本已加载",
+    Content = "科恐鬼脚本已加载",
     Buttons = {
         {Title = "开始使用", Callback = createMainUI, Variant = "Primary"},
         {Title = "退出", Callback = function() end}
