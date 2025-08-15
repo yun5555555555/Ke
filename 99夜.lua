@@ -1,4 +1,4 @@
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/dream77239/china-ui/refs/heads/main/main%20(2).lua"))()
 
 -- 渐变文字函数
 local function gradientText(text, colorA, colorB)
@@ -182,70 +182,92 @@ local function toggleESP(itemName, displayName, color)
     })
 end
 
--- 创建主UI
+-- 创建主UI的函数（只在点击"进入外挂"后调用）
 local function createMainUI()
-    local mainWindow = WindUI:CreateWindow({
-        Title = gradientText("科脚本-终极版", Color3.fromHex("#FF0000"), Color3.fromHex("#00FF00")),
-        Size = UDim2.fromOffset(600, 500),
+    -- 创建主窗口
+    local Window = WindUI:CreateWindow({
+        Title = "科脚本-99夜",
+        Icon = "zap",
+        IconThemed = true,
+        Author = "作者qq:2875456271",
+        Folder = "KeScript",
+        Size = UDim2.fromOffset(600, 480),
+        Transparent = true,
         Theme = "Dark",
-        SideBarWidth = 200
+        User = {
+            Enabled = true,
+            Callback = function() print("点击用户信息") end,
+            Anonymous = true
+        },
+        SideBarWidth = 200,
+        ScrollBarEnabled = true
     })
 
-    local mainSection = mainWindow:Section({
-        Title = "主要功能",
-        Opened = true
+    -- 主标签页
+    local MainTab = Window:Tab({
+        Title = "主功能",
+        Icon = "zap",
+        Locked = false,
     })
-    
-    -- 传送标签页
-    local teleportTab = mainSection:Tab({Title = "传送功能", Icon = "map-pin"})
-    
-    -- 添加篝火传送按钮
-    teleportTab:Button({
+
+    -- 添加99夜功能按钮
+    MainTab:Button({
         Title = "传送回篝火",
         Desc = "传送到固定篝火位置",
         Callback = teleportToBonfire
     })
-    
+
     -- 添加物品传送按钮
     for _, item in ipairs(itemConfig) do
-        teleportTab:Button({
+        MainTab:Button({
             Title = item.display,
             Desc = "传送到"..item.display,
             Callback = function() teleportToItem(item.name, item.display) end
         })
     end
-    
+
     -- 透视标签页
-    local espTab = mainSection:Tab({Title = "透视功能", Icon = "eye"})
+    local ESPTab = Window:Tab({
+        Title = "透视功能",
+        Icon = "eye",
+        Locked = false,
+    })
+
+    -- 添加透视按钮
     for _, item in ipairs(itemConfig) do
-        espTab:Button({
+        ESPTab:Button({
             Title = item.display,
             Desc = "切换"..item.display.."透视",
             Callback = function() toggleESP(item.name, item.display, item.espColor) end
         })
     end
-    
-    -- 设置标签页
-    local settingsTab = mainSection:Tab({Title = "设置", Icon = "settings"})
-    
-    local themeValues = {}
-for name, _ in pairs(WindUI:GetThemes()) do
-    table.insert(themeValues, name)
-end
 
-settingsTab:Dropdown({
-    Title = "更改UI颜色",
-    Desc = "选择界面主题颜色",
-    Multi = false,
-    AllowNone = false,
-    Value = "Dark",
-    Values = themeValues,
-    Callback = function(theme)
-        WindUI:SetTheme(theme)
+    -- 设置标签页
+    local SettingsTab = Window:Tab({
+        Title = "设置",
+        Icon = "settings",
+        Locked = false,
+    })
+
+    -- 主题选择
+    local themeValues = {}
+    for name, _ in pairs(WindUI:GetThemes()) do
+        table.insert(themeValues, name)
     end
-})
-    
-    settingsTab:Button({
+
+    SettingsTab:Dropdown({
+        Title = "更改UI主题",
+        Multi = false,
+        AllowNone = false,
+        Value = nil,
+        Values = themeValues,
+        Callback = function(theme)
+            WindUI:SetTheme(theme)
+        end
+    }):Select(WindUI:GetCurrentTheme())
+
+    -- 清理透视按钮
+    SettingsTab:Button({
         Title = "清理所有透视",
         Desc = "释放内存并清除所有透视效果",
         Callback = function()
@@ -261,24 +283,34 @@ settingsTab:Dropdown({
             WindUI:Notify({Title = "提示", Content = "已清理所有透视", Duration = 2})
         end
     })
+
+    Window:OnClose(function()
+        print("脚本面板已关闭")
+    end)
 end
 
--- 显示欢迎弹窗（只有点击"开始使用"才会创建主UI）
-WindUI:Popup({
-    Title = "欢迎使用科脚本",
-    Content = "请点击下方按钮开始使用",
-    Buttons = {
-        {
-            Title = "取消",
-            Callback = function() 
-                print("用户取消了脚本") 
-            end,
-            Variant = "Secondary"
-        },
-        {
-            Title = "开始使用",
-            Callback = createMainUI,  -- 点击后才会创建主UI
-            Variant = "Primary"
+-- 显示欢迎弹窗（主UI只在点击"进入外挂"后创建）
+local function showWelcome()
+    local welcomeMsg = gradientText("科脚本", Color3.fromHex("#FF0000"), Color3.fromHex("#00FF00"))
+    
+    WindUI:Popup({
+        Title = "欢迎使用外挂",
+        Content = "尊贵的科脚本用户祝您平平安安，健健康康",
+        Buttons = {
+            {
+                Title = "取消",
+                Callback = function() 
+                    print("用户取消了外挂") 
+                end,
+                Variant = "Secondary"
+            },
+            {
+                Title = "进入外挂",
+                Callback = createMainUI,  -- 点击后才创建主UI
+                Variant = "Primary"
+            }
         }
-    }
-})
+    })
+end
+
+showWelcome()
