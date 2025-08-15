@@ -1,4 +1,4 @@
-local WindUI = loadstring(game:HttpGet("https://github.com/Footagesus/WindUI/releases/latest/download/main.lua"))()
+local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/dream77239/china-ui/refs/heads/main/main%20(2).lua"))()
 
 local function gradientText(text, colorA, colorB)
     if type(text) ~= "string" then return text end
@@ -157,139 +157,184 @@ local function onPlayerJoined(player)
     })
 end
 
-local function createMainUI()
-    local mainWindow = WindUI:CreateWindow({
-        Title = "恐鬼症辅助",
-        Size = UDim2.fromOffset(600, 480),
-        Theme = "Dark",
-        SideBarWidth = 200
-    })
-    
-    local mainSection = mainWindow:Section({Title = "功能", Opened = true})
-    local mainTab = mainSection:Tab({Title = "主要功能", Icon = "tools"})
-    
-    mainTab:Paragraph({Title = "EMF计数器", Content = "检测到 "..EMFCount.." 次互动"})
-    mainTab:Paragraph({Title = "温度检测", Content = "正在监测中..."})
-    mainTab:Paragraph({Title = "精灵盒", Content = "等待声音输入..."})
-    
-    mainTab:Divider({Title = "玩家功能"})
-    
-    mainTab:Toggle({
-        Title = "穿墙模式",
-        Value = false,
-        Callback = function(enabled)
-            for _, door in ipairs(WorkspaceDescendants) do
-                if door:IsA("BasePart") and (door.Name == "Door" or door.Name:find("Door")) then
-                    door.CanCollide = not enabled
-                end
+-- 创建主窗口
+local Window = WindUI:CreateWindow({
+    Title = "科脚本-恐鬼症",
+    Icon = "zap",
+    IconThemed = true,
+    Author = "作者qq:2875456271",
+    Folder = "KeScript",
+    Size = UDim2.fromOffset(600, 480),
+    Transparent = true,
+    Theme = "Dark",
+    User = {
+        Enabled = true,
+        Callback = function() print("点击用户信息") end,
+        Anonymous = true
+    },
+    SideBarWidth = 200,
+    ScrollBarEnabled = true
+})
+
+-- 主标签页
+local MainTab = Window:Tab({
+    Title = "主功能",
+    Icon = "zap",
+    Locked = false,
+})
+
+-- 添加恐鬼症功能
+MainTab:Paragraph({Title = "EMF计数器", Content = "检测到 "..EMFCount.." 次互动"})
+MainTab:Paragraph({Title = "温度检测", Content = "正在监测中..."})
+MainTab:Paragraph({Title = "精灵盒", Content = "等待声音输入..."})
+
+MainTab:Divider({Title = "玩家功能"})
+
+MainTab:Toggle({
+    Title = "穿墙模式",
+    Value = false,
+    Callback = function(enabled)
+        for _, door in ipairs(WorkspaceDescendants) do
+            if door:IsA("BasePart") and (door.Name == "Door" or door.Name:find("Door")) then
+                door.CanCollide = not enabled
             end
-        end
-    })
-    
-    mainTab:Button({
-        Title = "夜视模式",
-        Callback = function()
-            Lighting.Brightness = 2
-            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-            Lighting.GlobalShadows = false
-            Lighting.ClockTime = 14
-            Lighting.FogEnd = 100000
-        end
-    })
-    
-    mainTab:Toggle({
-        Title = "无限体力",
-        Value = false,
-        Callback = function(enabled)
-            if LocalPlayer.Character then
-                local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
-                if humanoid then
-                    humanoid:SetAttribute("Stamina", enabled and 100 or nil)
-                end
-            end
-        end
-    })
-    
-    mainTab:Divider({Title = "透视功能"})
-    
-    mainTab:Toggle({
-        Title = "幽灵透视",
-        Value = false,
-        Callback = function(enabled)
-            GhostLock = not enabled
-            if enabled then
-                coroutine.wrap(GhostESP)()
-            end
-        end
-    })
-    
-    mainTab:Toggle({
-        Title = "互动透视",
-        Value = false,
-        Callback = function(enabled)
-            if enabled then
-                EMFBillboardGuiConn = Workspace.DescendantAdded:Connect(onEMFAdded)
-            elseif EMFBillboardGuiConn then
-                EMFBillboardGuiConn:Disconnect()
-            end
-        end
-    })
-    
-    mainTab:Toggle({
-        Title = "诅咒物品",
-        Value = false,
-        Callback = function(enabled)
-            if Cursed then
-                local highlight = Cursed:FindFirstChild("CursedHighlight")
-                if enabled and not highlight then
-                    highlight = Instance.new("Highlight")
-                    highlight.Name = "CursedHighlight"
-                    highlight.FillTransparency = 1
-                    highlight.OutlineColor = Color3.fromRGB(255, 170, 127)
-                    highlight.Parent = Cursed
-                elseif not enabled and highlight then
-                    highlight:Destroy()
-                end
-            end
-        end
-    })
-    
-    local settingsTab = mainWindow:Section({Title = "设置"}):Tab({Title = "设置", Icon = "settings"})
-    
-    local themes = {}
-    for name in pairs(WindUI:GetThemes()) do
-        table.insert(themes, name)
-    end
-    
-    settingsTab:Dropdown({
-        Title = "界面主题",
-        Values = themes,
-        Callback = function(theme)
-            WindUI:SetTheme(theme)
-        end
-    })
-    
-    Players.PlayerAdded:Connect(onPlayerJoined)
-    
-    local map = Workspace:FindFirstChild("Map")
-    if map then
-        map.DescendantAdded:Connect(onEMFAdded)
-    end
-    
-    for _, tool in ipairs(Workspace:GetDescendants()) do
-        if tool:IsA("Tool") and tool.Name == "Spirit Box" then
-            tool.Handle.ChildAdded:Connect(onSpiritBoxSound)
         end
     end
-    
-    coroutine.wrap(initFreezeTemp)()
+})
+
+MainTab:Button({
+    Title = "夜视模式",
+    Callback = function()
+        Lighting.Brightness = 2
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        Lighting.GlobalShadows = false
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+    end
+})
+
+MainTab:Toggle({
+    Title = "无限体力",
+    Value = false,
+    Callback = function(enabled)
+        if LocalPlayer.Character then
+            local humanoid = LocalPlayer.Character:FindFirstChild("Humanoid")
+            if humanoid then
+                humanoid:SetAttribute("Stamina", enabled and 100 or nil)
+            end
+        end
+    end
+})
+
+MainTab:Divider({Title = "透视功能"})
+
+MainTab:Toggle({
+    Title = "幽灵透视",
+    Value = false,
+    Callback = function(enabled)
+        GhostLock = not enabled
+        if enabled then
+            coroutine.wrap(GhostESP)()
+        end
+    end
+})
+
+MainTab:Toggle({
+    Title = "互动透视",
+    Value = false,
+    Callback = function(enabled)
+        if enabled then
+            EMFBillboardGuiConn = Workspace.DescendantAdded:Connect(onEMFAdded)
+        elseif EMFBillboardGuiConn then
+            EMFBillboardGuiConn:Disconnect()
+        end
+    end
+})
+
+MainTab:Toggle({
+    Title = "诅咒物品",
+    Value = false,
+    Callback = function(enabled)
+        if Cursed then
+            local highlight = Cursed:FindFirstChild("CursedHighlight")
+            if enabled and not highlight then
+                highlight = Instance.new("Highlight")
+                highlight.Name = "CursedHighlight"
+                highlight.FillTransparency = 1
+                highlight.OutlineColor = Color3.fromRGB(255, 170, 127)
+                highlight.Parent = Cursed
+            elseif not enabled and highlight then
+                highlight:Destroy()
+            end
+        end
+    end
+})
+
+-- 设置标签页
+local SettingsTab = Window:Tab({
+    Title = "设置",
+    Icon = "settings",
+    Locked = false,
+})
+
+-- 主题选择
+local themes = {}
+for name in pairs(WindUI:GetThemes()) do
+    table.insert(themes, name)
 end
 
-WindUI:Popup({
-    Title = "欢迎使用",
-    Content = "科恐鬼脚本已加载",
-    Buttons = {
-        {Title = "开始使用", Callback = createMainUI, Variant = "Primary"},
-        {Title = "退出", Callback = function() end}
-    }
-})
+SettingsTab:Dropdown({
+    Title = "界面主题",
+    Values = themes,
+    Callback = function(theme)
+        WindUI:SetTheme(theme)
+    end
+}):Select(WindUI:GetCurrentTheme())
+
+-- 初始化事件监听
+Players.PlayerAdded:Connect(onPlayerJoined)
+
+local map = Workspace:FindFirstChild("Map")
+if map then
+    map.DescendantAdded:Connect(onEMFAdded)
+end
+
+for _, tool in ipairs(Workspace:GetDescendants()) do
+    if tool:IsA("Tool") and tool.Name == "Spirit Box" then
+        tool.Handle.ChildAdded:Connect(onSpiritBoxSound)
+    end
+end
+
+coroutine.wrap(initFreezeTemp)()
+
+Window:OnClose(function()
+    print("脚本面板已关闭")
+end)
+
+-- 显示欢迎弹窗
+local function showWelcome()
+    local welcomeMsg = gradientText("科脚本", Color3.fromHex("#FF0000"), Color3.fromHex("#00FF00"))
+    
+    WindUI:Popup({
+        Title = "欢迎使用外挂",
+        Content = "尊贵的科脚本用户祝您平平安安，健健康康",
+        Buttons = {
+            {
+                Title = "取消",
+                Callback = function() 
+                    print("用户取消了外挂") 
+                end,
+                Variant = "Secondary"
+            },
+            {
+                Title = "进入外挂",
+                Callback = function()
+                    Window:Show()
+                end,
+                Variant = "Primary"
+            }
+        }
+    })
+end
+
+showWelcome()
