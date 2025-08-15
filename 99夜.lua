@@ -191,7 +191,7 @@ local function createMainUI()
         IconThemed = true,
         Author = "作者qq:2875456271",
         Folder = "KeScript",
-        Size = UDim2.fromOffset(600, 480),
+        Size = UDim2.fromOffset(300, 240),
         Transparent = true,
         Theme = "Dark",
         User = {
