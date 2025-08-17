@@ -406,13 +406,22 @@ UpdatePlayerList()
 
 -- 创建UI窗口
 local function createWindow()
-    local Window = WindUI:CreateWindow({
-        Title = "99夜脚本 - 增强版",
-        Size = UDim2.fromOffset(350, 500),
+    Window = WindUI:CreateWindow({
+        Title = "科脚本-洛天依",
+        Icon = "zap",
+        IconThemed = true,
+        Author = "作者qq:2875456271",
+        Folder = "KeScript",
+        Size = UDim2.fromOffset(300, 300),
+        Transparent = true,
         Theme = "Dark",
-        SideBarWidth = 220,
-        Icon = "rbxassetid://4483362748",
-        IconThemed = true
+        User = {
+            Enabled = true,
+            Callback = function() print("点击用户信息") end,
+            Anonymous = true
+        },
+        SideBarWidth = 200,
+        ScrollBarEnabled = true
     })
 
     -- 主功能标签页
