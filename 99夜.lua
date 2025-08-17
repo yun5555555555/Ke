@@ -1,10 +1,105 @@
 local WindUI = loadstring(game:HttpGet("https://raw.githubusercontent.com/dream77239/china-ui/refs/heads/main/main%20(2).lua"))()
 
-local function getCharacter()
-    local player = game.Players.LocalPlayer
-    return player.Character or player.CharacterAdded:Wait()
+-- 全局服务引用
+local Players = game:GetService("Players")
+local Workspace = game:GetService("Workspace")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local ProximityPromptService = game:GetService("ProximityPromptService")
+
+-- 本地玩家引用
+local LP = Players.LocalPlayer
+local Character = LP.Character or LP.CharacterAdded:Wait()
+
+-- 功能状态
+local Features = {
+    KillAura = false,
+    AutoChop = false,
+    AutoEat = false,
+    ChildESP = false,
+    ChestESP = false,
+    InstantInteract = false
+}
+
+-- 黑名单
+local Blacklist = {}
+
+-- 客户端模块
+local ClientModule
+local EatRemote
+local function GetClientModule()
+    if not ClientModule then
+        ClientModule = require(LP:WaitForChild("PlayerScripts"):WaitForChild("Client"))
+        EatRemote = ClientModule and ClientModule.Events and ClientModule.Events.RequestConsumeItem
+    end
+    return ClientModule, EatRemote
 end
 
+-- 从99night.lua移植的ESP功能
+local function AddESP(target, name, distance, enabled)
+    local rootPart = target:FindFirstChild("HumanoidRootPart") or target.PrimaryPart or target:FindFirstChildWhichIsA("BasePart")
+    if not rootPart then return end
+
+    local billboard = rootPart:FindFirstChild("BillboardGui") or Instance.new("BillboardGui")
+    billboard.Adornee = rootPart
+    billboard.Size = UDim2.new(0, 100, 0, 100)
+    billboard.StudsOffset = Vector3.new(0, 3, 0)
+    billboard.AlwaysOnTop = true
+    billboard.Enabled = enabled
+    billboard.Parent = rootPart
+
+    if not billboard:FindFirstChild("TextLabel") then
+        local label = Instance.new("TextLabel")
+        label.Text = name .. "\n" .. math.floor(distance) .. "m"
+        label.Size = UDim2.new(1, 0, 0, 40)
+        label.Position = UDim2.new(0, 0, 0, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.new(1, 1, 1)
+        label.TextStrokeTransparency = 0.3
+        label.Font = Enum.Font.GothamBold
+        label.TextSize = 14
+        label.Parent = billboard
+        
+        if name:match("Chest") then
+            local image = Instance.new("ImageLabel")
+            image.Position = UDim2.new(0, 20, 0, 40)
+            image.Size = UDim2.new(0, 60, 0, 60)
+            image.Image = "rbxassetid://18660563116"
+            image.BackgroundTransparency = 1
+            image.Parent = billboard
+        end
+    else
+        billboard.TextLabel.Text = name .. "\n" .. math.floor(distance) .. "m"
+    end
+end
+
+-- 从99night.lua移植的自动进食功能
+local function TryEatFood(food)
+    local _, remote = GetClientModule()
+    if not remote then 
+        WindUI:Notify({Title = "错误", Content = "无法获取进食远程函数", Duration = 5})
+        return 
+    end
+
+    if not ReplicatedStorage:FindFirstChild("TempStorage") then
+        WindUI:Notify({Title = "错误", Content = "找不到临时存储", Duration = 5})
+        return
+    end
+
+    WindUI:Notify({Title = "AlienX", Content = "➡️ 正在尝试吃下" .. food.Name, Duration = 5})
+    food.Parent = ReplicatedStorage.TempStorage
+    local success, result = pcall(function()
+        return remote:InvokeServer(food)
+    end)
+
+    if success and result and result.Success then
+        WindUI:Notify({Title = "AlienX", Content = "✅成功吃下 " .. food.Name, Duration = 5})
+    else
+        WindUI:Notify({Title = "AlienX", Content = "❌️进食失败", Duration = 5})
+    end
+end
+
+-- 物品配置
 local itemConfig = {
     {name = "Log", display = "木头", espColor = Color3.fromRGB(139, 69, 19)},
     {name = "Carrot", display = "胡萝卜", espColor = Color3.fromRGB(255, 165, 0)},
@@ -29,7 +124,17 @@ local itemConfig = {
     {name = "Wolf", display = "狼", espColor = Color3.fromRGB(192, 192, 192)},
     {name = "Chair", display = "椅子", espColor = Color3.fromRGB(160, 82, 45)},
     {name = "Tyre", display = "轮胎", espColor = Color3.fromRGB(20, 20, 20)},
-    {name = "Alien Chest", display = "外星宝箱", espColor = Color3.fromRGB(0, 255, 0)}
+    {name = "Alien Chest", display = "外星宝箱", espColor = Color3.fromRGB(0, 255, 0)},
+    {name = "Chest", display = "宝箱", espColor = Color3.fromRGB(210, 180, 140)},
+    {name = "Lost Child", display = "走失的孩子", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Lost Child1", display = "走失的孩子1", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Lost Child2", display = "走失的孩子2", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Lost Child3", display = "走失的孩子3", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Dino Kid", display = "恐龙孩子", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "kraken kid", display = "海怪孩子", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Squid kid", display = "鱿鱼孩子", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Koala Kid", display = "考拉孩子", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "koala", display = "考拉", espColor = Color3.fromRGB(0, 255, 255)}
 }
 
 local BONFIRE_POSITION = Vector3.new(0.189, 7.831, -0.341)
@@ -56,7 +161,7 @@ local function findItems(itemName)
 end
 
 local function teleportToItem(itemName, displayName)
-    local character = getCharacter()
+    local character = Character
     if not character then return end
     
     local items = findItems(itemName)
@@ -84,7 +189,7 @@ local function teleportToItem(itemName, displayName)
 end
 
 local function teleportToBonfire()
-    local character = getCharacter()
+    local character = Character
     if not character then return end
     
     character:MoveTo(BONFIRE_POSITION)
@@ -92,7 +197,7 @@ local function teleportToBonfire()
 end
 
 local function teleportItemsToPlayer(itemName, displayName)
-    local character = getCharacter()
+    local character = Character
     if not character then 
         WindUI:Notify({Title = "错误", Content = "无法获取角色", Duration = 2})
         return 
@@ -184,50 +289,246 @@ local function toggleESP(itemName, displayName, color)
     })
 end
 
-local function createMainUI()
+-- 自动功能主循环 (从99night.lua移植)
+local lastKillAura, lastAutoChop, lastAutoEat = 0, 0, 0
+local connection
+RunService.Heartbeat:Connect(function()
+    local now = tick()
+    
+    -- 瞬间互动
+    if Features.InstantInteract then
+        if not connection then
+            connection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
+                prompt.HoldDuration = 0
+            end)
+        end
+    else
+        if connection then
+            connection:Disconnect()
+            connection = nil
+        end
+    end
+
+    -- 杀戮光环
+    if Features.KillAura and now - lastKillAura >= 0.7 then
+        lastKillAura = now
+        if Character and Character:FindFirstChild("ToolHandle") then
+            local tool = Character.ToolHandle.OriginalItem.Value
+            if tool and ({["Old Axe"] = true, ["Good Axe"] = true, ["Spear"] = true, ["Hatchet"] = true, ["Bone Club"] = true})[tool.Name] then
+                for _, target in next, Workspace.Characters:GetChildren() do
+                    if target:IsA("Model") and target:FindFirstChild("HumanoidRootPart") and target:FindFirstChild("HitRegisters") then
+                        if (Character.HumanoidRootPart.Position - target.HumanoidRootPart.Position).Magnitude <= 100 then
+                            ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject"):InvokeServer(target, tool, true, Character.HumanoidRootPart.CFrame)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- 自动砍树
+    if Features.AutoChop and now - lastAutoChop >= 0.7 then
+        lastAutoChop = now
+        if Character and Character:FindFirstChild("ToolHandle") then
+            local tool = Character.ToolHandle.OriginalItem.Value
+            if tool and ({["Old Axe"] = true, ["Stone Axe"] = true, ["Iron Axe"] = true})[tool.Name] then
+                local function ChopTree(path)
+                    for _, tree in next, path:GetChildren() do
+                        task.wait(.1)
+                        if tree:IsA("Model") and ({["Small Tree"] = true, ["TreeBig1"] = true, ["TreeBig2"] = true, ["TreeBig3"] = true})[tree.Name] and tree:FindFirstChild("HitRegisters") then
+                            local trunk = tree:FindFirstChild("Trunk") or tree:FindFirstChild("HumanoidRootPart") or tree.PrimaryPart
+                            if trunk and (Character.HumanoidRootPart.Position - trunk.Position).Magnitude <= 100 then
+                                ReplicatedStorage:WaitForChild("RemoteEvents"):WaitForChild("ToolDamageObject"):InvokeServer(tree, tool, true, Character.HumanoidRootPart.CFrame)
+                            end
+                        end
+                    end
+                end
+                ChopTree(Workspace.Map.Foliage)
+                ChopTree(Workspace.Map.Landmarks)
+            end
+        end
+    end
+
+    -- 自动进食
+    if Features.AutoEat and now - lastAutoEat >= 10 then
+        lastAutoEat = now
+        if Character and Character:FindFirstChild("HumanoidRootPart") then
+            local foundFood = false
+            for _, obj in pairs(Workspace.Items:GetChildren()) do
+                if obj:IsA("Model") and ({["Carrot"] = true, ["Berry"] = true, ["Morsel"] = false, ["Cooked Morsel"] = true, ["Steak"] = false, ["Cooked Steak"] = true})[obj.Name] then
+                    local mainPart = obj:FindFirstChild("Handle") or obj.PrimaryPart
+                    if mainPart and (mainPart.Position - Character.HumanoidRootPart.Position).Magnitude < 25 then
+                        foundFood = true
+                        TryEatFood(obj)
+                        break
+                    end
+                end
+            end
+            if not foundFood then
+                WindUI:Notify({Title = "AlienX", Content = "🔍25米范围内无食物", Duration = 5})
+            end
+        else
+            WindUI:Notify({Title = "AlienX", Content = "⏳等待玩家加载", Duration = 5})
+        end
+    end
+
+    -- ESP更新
+    if Features.ChestESP then
+        for _, chest in next, Workspace.Items:GetChildren() do
+            if chest.Name:match("Chest") and chest:IsA("Model") and not table.find(Blacklist, chest) and chest:FindFirstChild("Main") then
+                AddESP(chest, "宝箱", (Character.HumanoidRootPart.Position - chest.Main.Position).Magnitude, true)
+            end
+        end
+    end
+
+    if Features.ChildESP then
+        for _, child in next, Workspace.Characters:GetChildren() do
+            if table.find({"Lost Child", "Lost Child1", "Lost Child2", "Lost Child3", "Dino Kid", "kraken kid", "Squid kid", "Koala Kid", "koala"}, child.Name) 
+               and child:FindFirstChild("HumanoidRootPart") and not table.find(Blacklist, child) then
+                AddESP(child, "孩子", (Character.HumanoidRootPart.Position - child.HumanoidRootPart.Position).Magnitude, true)
+            end
+        end
+    end
+end)
+
+-- 玩家列表管理
+local PlayerList = {}
+local function UpdatePlayerList()
+    PlayerList = {}
+    for _, player in ipairs(Players:GetPlayers()) do
+        table.insert(PlayerList, player.Name)
+    end
+end
+
+Players.PlayerAdded:Connect(UpdatePlayerList)
+Players.PlayerRemoving:Connect(UpdatePlayerList)
+UpdatePlayerList()
+
+-- 创建UI窗口
+local function createWindow()
     local Window = WindUI:CreateWindow({
-        Title = "99夜脚本",
-        Size = UDim2.fromOffset(350, 300),
+        Title = "99夜脚本 - 增强版",
+        Size = UDim2.fromOffset(350, 500),
         Theme = "Dark",
-        SideBarWidth = 200
+        SideBarWidth = 220,
+        Icon = "rbxassetid://4483362748",
+        IconThemed = true
     })
 
-    local MainTab = Window:Tab({Title = "主要功能"})
+    -- 主功能标签页
+    local MainTab = Window:Tab({Title = "主要功能", Icon = "zap"})
+
+    MainTab:Toggle({
+        Title = "杀戮光环",
+        Description = "自动攻击附近敌人",
+        Value = false,
+        Callback = function(value)
+            Features.KillAura = value
+        end
+    })
+
+    MainTab:Toggle({
+        Title = "自动砍树",
+        Description = "自动砍伐附近树木",
+        Value = false,
+        Callback = function(value)
+            Features.AutoChop = value
+        end
+    })
+
+    MainTab:Toggle({
+        Title = "自动进食",
+        Description = "自动吃附近食物",
+        Value = false,
+        Callback = function(value)
+            Features.AutoEat = value
+        end
+    })
+
+    MainTab:Toggle({
+        Title = "瞬间互动",
+        Description = "立即完成所有互动",
+        Value = false,
+        Callback = function(value)
+            Features.InstantInteract = value
+        end
+    })
 
     MainTab:Button({
         Title = "传送回篝火",
         Callback = teleportToBonfire
     })
 
-    MainTab:Divider({Title = "传送到物品"})
+    -- 透视功能标签页
+    local ESPTab = Window:Tab({Title = "透视功能", Icon = "eye"})
+
+    ESPTab:Toggle({
+        Title = "宝箱透视",
+        Value = false,
+        Callback = function(value)
+            Features.ChestESP = value
+        end
+    })
+
+    ESPTab:Toggle({
+        Title = "走失的孩子透视",
+        Value = false,
+        Callback = function(value)
+            Features.ChildESP = value
+        end
+    })
     
-    for _, item in ipairs(itemConfig) do
-        MainTab:Button({
-            Title = "传送到"..item.display,
-            Callback = function() teleportToItem(item.name, item.display) end
-        })
-    end
-
-    MainTab:Divider({Title = "物品传送到我"})
-    
-    for _, item in ipairs(itemConfig) do
-        MainTab:Button({
-            Title = "召唤"..item.display,
-            Callback = function() teleportItemsToPlayer(item.name, item.display) end
-        })
-    end
-
-    local ESPTab = Window:Tab({Title = "透视功能"})
-
+    -- 添加物品透视按钮
     for _, item in ipairs(itemConfig) do
         ESPTab:Button({
             Title = item.display.."透视",
-            Callback = function() toggleESP(item.name, item.display, item.espColor) end
+            Callback = function() 
+                toggleESP(item.name, item.display, item.espColor) 
+            end
         })
     end
 
-    local SettingsTab = Window:Tab({Title = "设置"})
+    -- 传送功能标签页
+    local TeleportTab = Window:Tab({Title = "传送功能", Icon = "map-pin"})
+    
+    -- 玩家传送
+    TeleportTab:Dropdown({
+        Title = "传送玩家",
+        Values = PlayerList,
+        Callback = function(selected)
+            local target = Players[selected]
+            if target and target.Character and target.Character:FindFirstChild("HumanoidRootPart") then
+                Character:PivotTo(target.Character.HumanoidRootPart.CFrame)
+            end
+        end
+    })
+    
+    -- 物品传送
+    for _, item in ipairs(itemConfig) do
+        TeleportTab:Button({
+            Title = "传送到"..item.display,
+            Callback = function()
+                teleportToItem(item.name, item.display)
+            end
+        })
+    end
 
+    -- 收集功能标签页
+    local CollectTab = Window:Tab({Title = "收集功能", Icon = "package"})
+    
+    for _, item in ipairs(itemConfig) do
+        CollectTab:Button({
+            Title = "召唤"..item.display,
+            Callback = function()
+                teleportItemsToPlayer(item.name, item.display)
+            end
+        })
+    end
+
+    -- 设置标签页
+    local SettingsTab = Window:Tab({Title = "设置", Icon = "settings"})
+
+    -- 主题选择
     local themes = {}
     for name in pairs(WindUI:GetThemes()) do
         table.insert(themes, name)
@@ -256,15 +557,12 @@ local function createMainUI()
             WindUI:Notify({Title = "提示", Content = "已清除所有透视", Duration = 2})
         end
     })
-
-    Window:OnClose(function()
-        print("UI closed")
-    end)
 end
 
+-- 欢迎弹窗
 WindUI:Popup({
-    Title = "欢迎",
-    Content = "99夜脚本已加载",
+    Title = "欢迎使用99夜脚本",
+    Content = "增强版脚本已加载",
     Buttons = {
         {
             Title = "取消",
@@ -272,8 +570,8 @@ WindUI:Popup({
             Variant = "Secondary"
         },
         {
-            Title = "开始",
-            Callback = createMainUI,
+            Title = "开始使用",
+            Callback = createWindow,
             Variant = "Primary"
         }
     }
