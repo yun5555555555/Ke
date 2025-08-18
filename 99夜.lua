@@ -100,8 +100,12 @@ end
 -- 清除所有ESP
 local function ClearAllESP()
     for target, data in pairs(ESPHandles) do
-        data.billboard:Destroy()
-        data.connection:Disconnect()
+        if data.billboard then
+            data.billboard:Destroy()
+        end
+        if data.connection then
+            data.connection:Disconnect()
+        end
     end
     ESPHandles = {}
     WindUI:Notify({Title = "提示", Content = "已清除所有透视", Duration = 2})
@@ -164,9 +168,9 @@ local itemConfig = {
     {name = "Chair", display = "椅子", espColor = Color3.fromRGB(160, 82, 45)},
     {name = "Tyre", display = "轮胎", espColor = Color3.fromRGB(20, 20, 20)},
     {name = "Alien Chest", display = "外星宝箱", espColor = Color3.fromRGB(0, 255, 0)},
-    {name = "Leather Body", display = "皮革", espColor = Color3.fromRGB(0, 255, 255)}
-    {name = "Thorn Body", display = "荆棘铠甲", espColor = Color3.fromRGB(0, 255, 255)}
-    {name = "Iron Body", display = "铁甲", espColor = Color3.fromRGB(0, 255, 255)}
+    {name = "Leather Body", display = "皮革", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Thorn Body", display = "荆棘铠甲", espColor = Color3.fromRGB(0, 255, 255)},
+    {name = "Iron Body", display = "铁甲", espColor = Color3.fromRGB(0, 255, 255)},
     {name = "Chest", display = "宝箱", espColor = Color3.fromRGB(210, 180, 140)},
     {name = "Lost Child", display = "走失的孩子", espColor = Color3.fromRGB(0, 255, 255)},
     {name = "Lost Child1", display = "走失的孩子1", espColor = Color3.fromRGB(0, 255, 255)},
@@ -307,9 +311,13 @@ local function toggleESP(itemName, displayName, color)
     -- 如果已经存在则关闭
     if _G["ESP_"..itemName] then
         for _, gui in ipairs(_G["ESP_"..itemName].guis) do
-            gui:Destroy()
+            if gui then
+                gui:Destroy()
+            end
         end
-        _G["ESP_"..itemName].conn:Disconnect()
+        if _G["ESP_"..itemName].conn then
+            _G["ESP_"..itemName].conn:Disconnect()
+        end
         _G["ESP_"..itemName] = nil
         WindUI:Notify({Title = "提示", Content = "已关闭"..displayName.."透视", Duration = 2})
         return
@@ -319,6 +327,8 @@ local function toggleESP(itemName, displayName, color)
     _G["ESP_"..itemName] = {guis = {}}
     
     local function createESP(itemPart)
+        if not itemPart or not itemPart:IsDescendantOf(Workspace) then return end
+        
         local billboard = Instance.new("BillboardGui")
         billboard.Name = "ESP_"..itemName
         billboard.Adornee = itemPart
@@ -343,8 +353,12 @@ local function toggleESP(itemName, displayName, color)
         -- 添加监听器，当物品被移除时清除ESP
         local conn = itemPart.AncestryChanged:Connect(function()
             if not itemPart:IsDescendantOf(Workspace) then
-                billboard:Destroy()
-                conn:Disconnect()
+                if billboard then
+                    billboard:Destroy()
+                end
+                if conn then
+                    conn:Disconnect()
+                end
             end
         end)
     end
@@ -386,8 +400,10 @@ RunService.Heartbeat:Connect(function()
     if Features.InstantInteract then
         if not connection then
             connection = ProximityPromptService.PromptButtonHoldBegan:Connect(function(prompt)
-                prompt.HoldDuration = 0
-                fireproximityprompt(prompt)
+                if prompt then
+                    prompt.HoldDuration = 0
+                    fireproximityprompt(prompt)
+                end
             end)
         end
     else
